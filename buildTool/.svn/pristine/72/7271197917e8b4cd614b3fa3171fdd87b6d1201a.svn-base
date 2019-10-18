@@ -1,0 +1,12 @@
+#Tue, 01 Dec 2015 13:15:06 -0800
+#set these variables to change EDVR's version number
+
+#beta version
+beta.version=false
+
+
+build.major.version=58
+build.minor.version=5
+build.patch.version=0
+build.number=11
+

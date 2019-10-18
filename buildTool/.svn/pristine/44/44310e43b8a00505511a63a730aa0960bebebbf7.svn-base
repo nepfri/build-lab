@@ -1,0 +1,122 @@
+#Tue, 20 Mar 2018 05:05:19 -0700
+#libraries
+svn.lib.url=https\://snaitsvn/svn/source/lib/trunk
+lib.dir=${workspace.dir}/lib
+ntdps.lib=${lib.dir}/ntdpsLib
+edvr.lib=${lib.dir}/edvrLib
+snadis.lib=${lib.dir}/snadisLib
+berthingAdmin.lib=${lib.dir}/berthingAdminLib
+mmr.lib=${lib.dir}/mmrLib
+jboss.lib=${lib.dir}/jboss_wildfly10
+tsu.lib=${tsu.project}/tsu/WEB-INF/lib
+dtu.lib=${lib.dir}/dtuLib
+
+#jdk location
+
+#TSU (Uncomment If Building)
+#jdk.location=C\:/working/lib/Java/jdk1.6.0_22/bin/javac
+#.version=jdk1.6.0_22
+#javac.target=1.6
+
+#Bething/MMR/EDVR (Uncomment If Building)
+jdk.location=E\:/working/buildTool/lib/Java/jdk1.8.0_31/bin/javac
+jdk.version=jdk1.8.0_31
+javac.target=1.8
+
+#visual studio properties
+msbuild.publisher.exe.location=C\:/Program Files (x86)/MSBuild/14.0/Bin
+visual.studio.version=14.0
+#s2de build mode
+s2de.build.mode.switch=Release
+
+#jboss version
+jboss.version=wildfly-10.1.0.Final
+
+#installer properties
+installer.build.mode.switch=Release
+installer.compiler.exe.location=C\:/Program Files (x86)/Microsoft Visual Studio 10.0/Common7/IDE
+installer.visual.studio.version=10.0
+
+#build folders
+src.dir=${basedir}/src
+dest.dir=${basedir}/dist
+compiled.dir=${basedir}/build
+s2de.src.dir=${basedir}
+
+
+#deliverables dir
+deliverables.dir=E\:/working/Deliverables
+
+#installation dir 
+installation.dir=${keyport.nim.installer.project}/Reliance
+installation.helper.directory=Installation Tools
+
+
+#project based build files
+svn.buildFiles.url=https\://snaitsvn/svn/source/buildFiles/trunk
+
+buildFiles.folder=${workspace.dir}/buildFiles
+edvr.build.file=${buildFiles.folder}/edvrBuild.xml
+ntdps.build.file=${buildFiles.folder}/ntdpsBuild.xml
+snadis.build.file=${buildFiles.folder}/snadisBuild.xml
+berthingAdmin.build.file=${buildFiles.folder}/berthingAdminBuild.xml
+berthing.build.file=${buildFiles.folder}/berthingBuild.xml
+mmr.build.file=${buildFiles.folder}/mmrBuild.xml
+tsu.build.file=${buildFiles.folder}/tsuBuild.xml
+s2de.build.file=${buildFiles.folder}/s2deBuild.xml
+dtu.build.file=${buildFiles.folder}/dtuBuild.xml
+
+#projects location
+edvr.project=${workspace.dir}/edvr
+ntdps.project=${workspace.dir}/NtdpsWebServiceAPI
+snadis.project=${workspace.dir}/SnadisCommon
+berthingAdmin.project=${workspace.dir}/BerthingAdmin
+berthing.project=${workspace.dir}/Berthing
+mmr.project=${workspace.dir}/mmr
+tsu.project=${workspace.dir}/tsu
+s2de.project=${workspace.dir}/S2DE_Source
+dtu.project=${workspace.dir}/S2DE_Data_Transfer_Utility
+#s2de.data.transfer.vbscripts.project=${workspace.dir}/S2DE_DataTransfer_VBscripts
+keyport.nim.installer.project=${workspace.dir}/Keyport_NIM Installer
+
+
+
+#jar and war file constants
+edvr.war=${edvr.project}/dist/edvr.war
+ntdps.jar=${ntdps.project}/dist/NtdpsWebServiceAPI.jar
+snadis.jar=${snadis.project}/dist/SnadisCommon.jar
+berthingAdmin.war=${berthingAdmin.project}/dist/berthingAdmin.war
+berthing.war=${berthing.project}/dist/berthing.war
+mmr.war=${mmr.project}/dist/mmr.war
+tsu.war=${tsu.project}/dist/tsu.war
+s2de.build=${s2de.project}/S2DE_Build
+dtu.jar=${dtu.project}/dist/S2DE DTU.jar
+keyport.nim.installer.exe=${workspace.dir}/Keyport_NIM Installer/Keyport_NIM Installer/${installer.build.mode.switch}/Keyport_NIM Installer.msi
+
+#specify the tag for the projects to be downloaded from cvs
+edvr.svn.url=https\://snaitsvn/svn/source/edvr/tags/v1.5.0_nosis_4.x.10
+snadis.svn.url=https\://snaitsvn/svn/source/SnadisCommonForNtdps/trunk
+ntdps.svn.url=https\://snaitsvn/svn/source/NtdpsWebServiceAPI/trunk
+berthingAdmin.svn.url=https\://snaitsvn/svn/source/berthingAdmin/tags/v1.3.3_nosis_4.x.10
+berthing.svn.url=https\://snaitsvn/svn/source/berthing/tags/v1.3.3_nosis_4.x.10
+mmr.svn.url=https\://snaitsvn/svn/source/mmr/tags/v3.1.0_nosis_4.x.10
+tsu.svn.url=https\://snaitsvn/svn/source/tsu/trunk
+s2de.svn.url=https\://snaitsvn/svn/source/S2DE_Source/tags/v3.3.2
+dtu.svn.url=https\://snaitsvn/svn/source/S2DE_Data_Transfer_Utility/tags/v3.0.1
+
+
+#installer tag
+keyport.nim.installer.svn.url=https\://snaitsvn.snait.navy.mil/svn/source/Keyport_NIM Installer/trunk
+
+
+#version number properties file
+version.file.location=${workspace.dir}/version number properties files
+edvr.version.file=${version.file.location}/edvr.version.properties
+berthing.version.file=${version.file.location}/berthing.version.properties
+mmr.version.file=${version.file.location}/mmr.version.properties
+tsu.version.file=${version.file.location}/tsu.version.properties
+s2de.version.file=${version.file.location}/s2de.version.properties
+dtu.version.file=${version.file.location}/dtu.version.properties
+
+#build.info.txt location constant
+build.info=E\:\\working\\buildTool/buildInfo

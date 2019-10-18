@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="s2de" default="main" basedir=".">
+
+	<property name="workspace.dir" location="${basedir}/.." /> 
+	<property name="build.prop.dir" location="${workspace.dir}" /> 
+	<property file="${build.prop.dir}/build.properties" /> 
+	<property file="${s2de.version.file}"/>
+	<property name="minor" value="${build.minor.version}"/>
+	<property name="patch" value="${build.patch.version}"/>
+
+	<!-- directory structure -->
+	<property name="s2de.solution.location" location="${s2de.src.dir}"/>
+	<property name="s2deOutput" location="${s2de.build}"/>
+	
+	<!--web publishing projects solution location -->
+	<property name="client.publish.solution.location" value ="${s2de.solution.location}/S2DE_Client" />
+	<property name="loader.publish.solution.location" value ="${s2de.solution.location}/S2DE_Loader" />
+	<property name="jobService.publish.solution.location" value ="${s2de.solution.location}/S2DE_JobService" />
+	<property name="logging.publish.solution.location" value ="${s2de.solution.location}/S2DE_WebService" />
+	<property name="ftp.publish.solution.location" value ="${s2de.solution.location}/S2DE_FTPPassword" />
+	
+	<!-- publish folders -->
+	<property name="client.publish.folder" value ="${s2deOutput}/Client" />
+	<property name="loader.publish.folder" value ="${s2deOutput}/Loader" />
+	<property name="jobService.publish.folder" value ="${s2deOutput}/JobService" />
+	<property name="logging.publish.folder" value ="${s2deOutput}/Logging" />
+	<property name="ftp.publish.folder" value ="${s2deOutput}/FTP" />
+	
+	<target name="main" depends="publish">
+		<echo>
+			Finishing with S2DE
+		</echo>
+	</target>
+	
+	<target name="clean" depends="buildNumber">
+		<tstamp prefix="timeS"/>
+		
+		<touch file="${buildInfoFile}"/>
+		
+		<echo file="${buildInfoFile}" message="Ant version used to do this build: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${ant.version} ${line.separator} ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="Project Dependencies: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${project.path} ${line.separator} ${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="Compiler Version: ${msbuild.publisher.exe.location}${line.separator}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="Publisher Version: ${msbuild.publisher.exe.location}${line.separator}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="Visual Studio Version: ${visual.studio.version}${line.separator}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="Build Mode: ${s2de.build.mode.switch}${line.separator}${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="S2DE Version: ${s2de.svn.url}${line.separator} ${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message=" -Build by: ${svn.username}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -Build on: ${timeS.TODAY} ${timeS.TSTAMP}${line.separator}"/> 
+		
+		<echo file="${buildInfoFile}" append="yes" message="********S2DE build file**************${line.separator}"/>
+		
+	
+		<!-- delete publish folders -->
+		<delete dir="${client.publish.folder}"/>
+		<delete dir="${loader.publish.folder}"/>
+		<delete dir="${logging.publish.folder}"/>
+		<delete dir="${jobService.publish.folder}"/>
+		<delete dir="${ftp.publish.folder}"/>
+		<!--Clean the solution before building so we can get a fresh build -->
+		
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 
+			<arg value="${basedir}/S2DE.sln"/>
+			<arg value="/t:Clean"/> 
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<arg value="/flp:logFile=${buildInfoFile};append=true" /> 
+		</exec>
+
+	</target>
+
+	<target name="init" depends="clean">
+		
+		
+		<!-- Recreate the publish folders -->
+		<mkdir dir="${client.publish.folder}"/>
+		<mkdir dir="${loader.publish.folder}"/>
+		<mkdir dir="${logging.publish.folder}"/>
+		<mkdir dir="${jobService.publish.folder}"/>
+		<mkdir dir="${ftp.publish.folder}"/>
+		
+	</target>
+	
+	<target name="checkSrc">
+		<condition property="checkedSrc">
+				<available file="${s2de.solution.location}" type="dir"/>
+		</condition>
+		<antcall target="failIfNoSrc"/>
+		<fileset dir="${s2de.solution.location}" id="solutionFile">
+			<filename name="S2DE.sln"/>
+		</fileset>
+		<pathconvert refid="solutionFile" property="fileSetNotEmpty" setonempty="false"/>
+		
+		<antcall target="failIfNoSolutionFile"/>
+		
+	</target>
+	
+	<target name="failIfNoSrc" unless="checkedSrc">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="S2DE.sln does not exist in the current directory, stoping the build"/>
+		<fail message="S2DE.sln does not exist in the current directory"/>
+	</target>
+	
+	<target name="failIfNoSolutionFile" unless="fileSetNotEmpty">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="S2DE.sln is empty, there is no .sln file to compile, stopping the build"/>
+		<fail message="S2DE source folder is empty, there is no .sln file to compile"/>
+	</target>
+
+	
+	<target name="compile" depends="init,checkSrc">
+		<!-- the command should look like this msbuild.exe "C:/S2DE_Source/S2DE.sln"
+		/t:build /p:Configuration=release /flp:logFile="C:/buildTool/buildInfo/buildFile.log" -->
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 
+			<arg value="${basedir}/S2DE.sln"/>
+			<arg value="/t:Build"/> 
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<!--<arg value="/flp:logFile=${buildInfoFile};append=true" /> -->
+		</exec>
+		
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	<target name="publish" depends="compile">
+		<!-- publish client -->
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 	
+			<arg value="${client.publish.solution.location}\S2DE_Client\S2DE_Client.csproj"/>
+			<arg value="/p:DeployOnBuild=true"/> <!-- deploy on build switch -->
+			<arg value="/p:PublishProfile=${client.publish.solution.location}\S2DE_Client\Properties\PublishProfiles\S2DE_Client_build_tool.pubxml"/> <!-- the file that is going to be used to publish the website-->
+			<arg value="/p:VisualStudioVersion=${visual.studio.version}"/> <!--the version of visual studio that we are using to compile -->
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<arg value="/p:PostBuildEvent=" />  <!--removing the post build events since they only apply when we build the entire solution-->
+		
+		</exec>
+		
+		<!-- publish job service -->
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 
+			<arg value="${jobService.publish.solution.location}\S2DE_JobService\S2DE_JobService.csproj"/> <!-- path to the solution that is going to be published -->
+			<arg value="/p:DeployOnBuild=true"/> <!-- deploy on build switch -->
+			<arg value="/p:PublishProfile=${jobService.publish.solution.location}\S2DE_JobService\Properties\PublishProfiles\S2DE_JobService_build_tool.pubxml"/> <!-- the file that is going to be used to publish the website-->
+			<arg value="/p:VisualStudioVersion=${visual.studio.version}"/> <!--the version of visual studio that we are using to compile -->
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<arg value="/p:PostBuildEvent=" /> <!--removing the post build events since they only apply when we build the entire solution-->
+		</exec>
+		
+		<!-- publish loader -->
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 
+			<arg value="${loader.publish.solution.location}\S2DE_Loader\S2DE_Loader.csproj"/> <!-- path to the solution that is going to be published -->
+			<arg value="/p:DeployOnBuild=true"/> <!-- deploy on build switch -->
+			<arg value="/p:PublishProfile=${loader.publish.solution.location}\S2DE_Loader\Properties\PublishProfiles\S2DE_Loader_build_tool.pubxml"/> <!-- the file that is going to be used to publish the website-->
+			<arg value="/p:VisualStudioVersion=${visual.studio.version}"/> <!--the version of visual studio that we are using to compile -->
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<arg value="/p:PostBuildEvent=" /> <!--removing the post build events since they only apply when we build the entire solution-->
+		</exec>
+		
+		<!-- publish logging -->
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 
+			<arg value="${logging.publish.solution.location}\S2DE_WebService\S2DE_WebService.csproj"/> <!-- path to the solution that is going to be published -->
+			<arg value="/p:DeployOnBuild=true"/> <!-- deploy on build switch -->
+			<arg value="/p:PublishProfile=${logging.publish.solution.location}\S2DE_WebService\Properties\PublishProfiles\S2DE_Logging_build_tool.pubxml"/> <!-- the file that is going to be used to publish the website-->
+			<arg value="/p:VisualStudioVersion=${visual.studio.version}"/> <!--the version of visual studio that we are using to compile -->
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<arg value="/p:PostBuildEvent=" /> <!--removing the post build events since they only apply when we build the entire solution-->
+		</exec>
+		
+		<!-- publish ftp -->
+		<exec executable="${msbuild.publisher.exe.location}/msbuild.exe"> 
+			<arg value="${ftp.publish.solution.location}\S2DE_FTPPassword\S2DE_FTPPassword.csproj"/> <!-- path to the solution that is going to be published -->
+			<arg value="/p:DeployOnBuild=true"/> <!-- deploy on build switch -->
+			<arg value="/p:PublishProfile=${ftp.publish.solution.location}\S2DE_FTPPassword\Properties\PublishProfiles\S2DE_FTP_build_tool.pubxml"/> <!-- the file that is going to be used to publish the website-->
+			<arg value="/p:VisualStudioVersion=${visual.studio.version}"/> <!--the version of visual studio that we are using to compile -->
+			<arg value="/p:Configuration=${s2de.build.mode.switch}"/> 
+			<arg value="/p:PostBuildEvent=" /> <!--removing the post build events since they only apply when we build the entire solution-->
+		</exec>
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+		
+	<target name="minor" if="${minor.version}">
+		<math result="minor" operand1="${minor}" operation="+" operand2="1" datatype="int"/>
+	</target>
+	
+	<target name="patch" if="${patch.version}">
+		<math result="patch" operand1="${patch}" operation="+" operand2="1" datatype="int"/>
+	</target>
+
+	<target name="buildNumber" depends="minor,patch">
+		<math result="bNumber" operand1="${build.number}" operation="+" operand2="1" datatype="int"/>
+		<property name="buildInfoFile" value="${build.info}/s2de_v${build.major.version}-${minor}-${patch}-${bNumber}.txt"/>
+	</target>
+	
+</project>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="antTasks" default="main" basedir="." >
+
+	<target name="clean">
+		<delete dir="C:\working\eclipse_workspace\AntTasks\build\antTasks\classes\" />
+	</target>
+	
+	<path id="classpath">
+		<fileset dir="C:\Program Files (x86)\eclipse_3-5-0\plugins\org.apache.ant_1.7.1.v20090120-1145\lib"></fileset>
+	</path>
+
+	<target name="main" depends="clean">
+		<javac srcdir="C:\working\eclipse_workspace\AntTasks\src\build\antTasks\classes" destdir=".">
+			<classpath refid="classpath" /> 
+		</javac>
+		<jar destfile="UserInterface.jar" basedir="." includes="**/*.class"/>
+	</target>
+</project>

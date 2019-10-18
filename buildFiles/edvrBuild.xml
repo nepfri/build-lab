@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="edvr" default="main" basedir=".">
+
+	<property name="workspace.dir" location="${basedir}/.." /> 
+	<property name="build.prop.dir" location="${workspace.dir}" /> 
+	<property file="${build.prop.dir}/build.properties" /> 
+	<property file="${edvr.version.file}"/>
+	<property name="minor" value="${build.minor.version}"/>
+	<property name="patch" value="${build.patch.version}"/>
+	
+	<!-- directory structure -->
+	<property name="edvrSrc" location="${src.dir}"/>
+	<property name="edvrOutput" location="${compiled.dir}"/>
+	<property name="edvrWar" location="${dest.dir}"/>
+	
+	<!-- edvr directories -->
+	
+	<property name="webXML" location="${basedir}/web/WEB-INF"/>
+	<property name="webDir" location="${basedir}/web"/>
+	<property name="libDir" location="${webXML}/lib"/>
+
+	<!-- jar files needed for compilation-->
+	<property name="edvrLib" location="${edvr.lib}"/>
+	<property name="commonLib" location="${common.lib}"/>
+	<property name="ntdpsJarLocation" location="${ntdps.project}/dist"/>
+	<property name="ntdpsBuildInfo" location="${ntdps.project}/ntdpsAPIWebServiceBuildInfo.txt"/>
+	<property name="snadisJarLocation" location="${snadis.project}/dist"/>
+	<property name="snadisBuildInfo" location="${snadis.project}/snadisCommonBuildInfo.txt"/>
+	
+	<path id="classpath">
+		<pathelement location="${ntdps.jar}"/>
+		<pathelement location="${snadis.jar}"/>
+		<fileset dir="${edvrLib}"></fileset>
+		<fileset dir="${commonLib}"></fileset>
+	</path>
+	
+	<target name="main" depends="createWar">
+		<echo>
+			Finishing with EDVR
+		</echo>
+	</target>
+	
+	<target name="clean">
+		<delete dir="${libDir}"/>
+		<delete dir="${edvrWar}"/>
+		<delete dir="${edvrOutput}"/>
+	</target>
+
+	<target name="init" depends="clean, buildNumber">
+		<tstamp prefix="timeS"/>
+	
+		<touch file="${buildInfoFile}"/>
+		
+		<echo file="${buildInfoFile}" message="Ant version used to do this build: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${ant.version} ${line.separator} ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="Project Dependencies: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${project.path} ${line.separator} ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="NtdpsWebServiceAPI version used: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -${ntdps.svn.url}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="SnadisCommonForNtdps version used: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -${snadis.svn.url}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="EDVR Version used: ${line.separator} -${edvr.svn.url}${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="Runtime Dependencies: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -JDK version: ${jdk.version}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -JBoss Version: ${jboss.version}${line.separator}"/>
+		
+		
+		<echo file="${buildInfoFile}" append="yes" message=" -Build by: ${svn.username}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -Build on: ${timeS.TODAY} ${timeS.TSTAMP} ${line.separator}"/> 
+		
+		<pathconvert pathsep="${line.separator} - " property="jarFiles" refid="classpath">
+			<mapper type="flatten"/>
+		</pathconvert>
+		
+		
+		<echo file="${buildInfoFile}" append="yes" message="Compile Dependencies for ${ant.project.name}:${line.separator} -"/>
+		<echo file="${buildInfoFile}" message="   ${jarFiles}" append="yes"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="${line.separator} ${line.separator}********EDVR build file**************${line.separator}"/>
+		
+		<mkdir dir="${edvrWar}"/>
+		<mkdir dir="${edvrOutput}"/>
+	</target>
+	
+	<target name="checkSrc">
+		<condition property="checkedSrc">
+				<available file="${edvrSrc}" type="dir"/>
+		</condition>
+		<antcall target="failIfNoSrc"/>
+		<fileset dir="${edvrSrc}" id="javaFiles">
+			<filename name="**/*.java"/>
+		</fileset>
+		<pathconvert refid="javaFiles" property="fileSetNotEmpty" setonempty="false"/>
+		
+		<antcall target="failIfNoJavaFiles"/>
+		
+	</target>
+	
+	<target name="failIfNoSrc" unless="checkedSrc">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="EDVR source folder does not exist in the current directory, stoping the build"/>
+		<fail message="EDVR source folder does not exist in the current directory"/>
+	</target>
+	
+	<target name="failIfNoJavaFiles" unless="fileSetNotEmpty">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="EDVR source folder is empty, there are no .java files to compile, stopping the build"/>
+		<fail message="EDVR source folder is empty, there are no .java files to compile"/>
+	</target>
+
+	
+	<target name="compile" depends="init,checkSrc">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+	
+			<javac srcdir="${edvrSrc}" destdir="${edvrOutput}" fork="yes" executable="${jdk.location}" target="${javac.target}" source="${javac.target}">
+				<classpath refid="classpath" /> 
+			</javac>
+			
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	<target name="createLibDir" depends="compile">
+		<mkdir dir="${libDir}"/>
+		<copy todir="${libDir}">
+			<fileset dir="${commonLib}/apache-ant">
+				  <exclude name="jaxrpc.jar" /> 
+				  <exclude name="org.apache.*.*" /> 
+			</fileset>
+			<fileset dir="${edvrLib}">
+				<exclude name="**/ntdps_4.x.6.9_jars/**"/>
+			</fileset>
+			<fileset dir="${ntdpsJarLocation}"/>
+			<fileset dir="${snadisJarLocation}"/>
+		</copy>
+	</target>
+	
+	
+	<target name="createWar" depends="clean,init,createLibDir">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+			<war destfile="${dest.dir}/edvr.war" webxml="${webXML}/web.xml">
+				<fileset dir="${webDir}"></fileset>
+				<fileset file="${buildInfoFile}"/>
+				<fileset file="${ntdpsBuildInfo}"/>
+				<fileset file="${snadisBuildInfo}"/>
+				<classes dir="${edvrOutput}"/>
+			</war>
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	
+	<target name="minor" if="${minor.version}">
+		<math result="minor" operand1="${minor}" operation="+" operand2="1" datatype="int"/>
+	</target>
+	
+	<target name="patch" if="${patch.version}">
+		<math result="patch" operand1="${patch}" operation="+" operand2="1" datatype="int"/>
+	</target>
+
+	<target name="buildNumber" depends="minor,patch">
+		<math result="bNumber" operand1="${build.number}" operation="+" operand2="1" datatype="int"/>
+		<property name="buildInfoFile" value="${build.info}/edvr_v${build.major.version}-${minor}-${patch}-${bNumber}.txt"/>
+	</target>
+	
+</project>

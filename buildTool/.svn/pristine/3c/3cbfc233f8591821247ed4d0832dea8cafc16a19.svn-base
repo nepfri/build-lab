@@ -1,0 +1,11 @@
+#Wed, 02 Dec 2015 13:45:39 -0800
+#set these variables to change berthing's version number
+
+#beta version
+beta.version=false
+
+build.major.version=20
+build.minor.version=3
+build.patch.version=3
+build.number=9
+

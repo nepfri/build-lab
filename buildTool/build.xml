@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="main">
+
+	<taskdef name="gui" classname="build.antTasks.classes.BuildChoice"/>
+
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="${basedir}/antLib/antcontrib.jar"/>
+		</classpath>
+	</taskdef>
+
+	<target name="hello">
+		<echo>"${basedir}"</echo>
+	</target>
+	
+	<!--added support for svn -->
+	<path id="svn.classpath">
+		<pathelement location="${basedir}/antLib/svnant.jar" /> 
+		<pathelement location="${basedir}/antLib/svnClientAdapter.jar" />
+		<pathelement location="${basedir}/antLib/svnjavahl.jar" />
+	</path>  
+  
+	<!-- load the svn task -->
+	<taskdef resource="svntask.properties" classpathref="svn.classpath"/>
+
+	
+	
+	<!--properties-->
+	<property name="workspace.dir" location="${basedir}"/>
+	<property name="build.prop.dir" location="${workspace.dir}"/>
+	<property file="${build.prop.dir}/build.properties"/>
+	
+	
+	<!--version properties files-->
+	<property file="${edvr.version.file}" prefix="edvrProperties"/>
+	<property name="edvrMinorNumber" value="${edvrProperties.build.minor.version}"/>
+	<property name="edvrPatchNumber" value="${edvrProperties.build.patch.version}"/>
+	<property file="${berthing.version.file}" prefix="berthingProperties"/>
+	<property name="berthingMinorNumber" value="${berthingProperties.build.minor.version}"/>
+	<property name="berthingPatchNumber" value="${berthingProperties.build.patch.version}"/>
+	<property file="${mmr.version.file}" prefix="mmrProperties"/>
+	<property name="mmrMinorNumber" value="${mmrProperties.build.minor.version}"/>
+	<property name="mmrPatchNumber" value="${mmrProperties.build.patch.version}"/>
+	
+	<!--added support for s2de -->
+	<property file="${s2de.version.file}" prefix="s2deProperties"/>
+	<property name="s2deMinorNumber" value="${s2deProperties.build.minor.version}"/>
+	<property name="s2dePatchNumber" value="${s2deProperties.build.patch.version}"/>
+	
+	
+	<!--added support for dtu -->
+	<property file="${dtu.version.file}" prefix="dtuProperties"/>
+	<property name="dtuMinorNumber" value="${dtuProperties.build.minor.version}"/>
+	<property name="dtuPatchNumber" value="${dtuProperties.build.patch.version}"/>
+	
+	
+	<!-- added support for tsu -->
+	<property file="${tsu.version.file}" prefix="tsuProperties"/>
+	<property name="tsuMinorNumber" value="${tsuProperties.build.minor.version}"/>
+	<property name="tsuPatchNumber" value="${tsuProperties.build.patch.version}"/>	
+
+	<!--build paths-->
+	<property name="edvr.build.path" value="${ntdps.project};${snadis.project};${edvr.project};"/>
+	<property name="berthingAdmin.build.path" value="${ntdps.project};${snadis.project};${berthingAdmin.project}; ${berthing.project}"/>
+	<property name="mmr.build.path" value="${ntdps.project};${snadis.project};${mmr.project}"/>
+	<property name="all.build.path" value="${ntdps.project};${snadis.project};${edvr.project};${berthingAdmin.project}; ${berthing.project};${mmr.project}"/>
+	<!--added support for s2de -->
+	<property name="s2de.build.path" value="${s2de.project}"/>
+	<property name="s2de.release.build.path" value="${s2de.project}; ${dtu.project}"/>
+	<property name="dtu.build.path" value=" ${dtu.project}"/>
+	<!--added support for tsu -->
+	<property name="tsu.build.path" value="${tsu.project}"/>
+	
+	
+	<!--project names as they are displayed in the GUI, used for the if statements -->
+	<property name="edvr.project.name" value ="NIM - EDVR"/>
+	<property name="berthing.project.name" value ="NIM - Berthing"/>
+	<property name="mmr.project.name" value="NIM - MMR"/>
+	<property name="s2de.project.name" value="S2DE"/>
+	<property name="dtu.project.name" value="DTU"/>
+	<property name="tsu.project.name" value="TSU"/>
+	<property name="all.projects" value="NIM - All Deliverables"/>
+	
+	
+	
+	<target name="main" depends="compile, createExecutable">
+		<if>
+			<equals arg1="${buildProject}" arg2="${edvr.project.name}"/>
+			<then>
+				<antcall target="updateEdvrVersionNumber"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${berthing.project.name}"/>
+			<then>
+				<antcall target="updateBerthingVersion"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${mmr.project.name}"/>
+			<then>
+				<antcall target="updateMmrVersion"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${tsu.project.name}"/>
+			<then>
+				<antcall target="updateTSUVersion"/>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${buildProject}" arg2="${s2de.project.name}"/>
+			<then>
+				<antcall target="updateS2DEVersion"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${dtu.project.name}"/>
+			<then>
+				<antcall target="updateDTUVersion"/>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${buildProject}" arg2="${all.projects}"/>
+			<then>
+				<antcall target="updateEdvrVersionNumber"/>
+				<antcall target="updateBerthingVersion"/>
+				<antcall target="updateMmrVersion"/>
+				
+			</then>
+		
+		</if>
+		
+		<echo>
+			Finished build
+		</echo>
+	</target>
+	
+	<target name="login">
+		<if>
+			<equals arg1="${is_si}" arg2="true" />
+			
+			<then>
+				<property name="buildProject" value="${build_Project}"/>
+				<property name="svn.username" value="${svn_user_name}"/>
+				<property name="svn.pass" value="${svn_pass}"/>
+			</then>
+			<else>
+				<gui projectProperty="build_Project" versionFilesLocation="${version.file.location}" propetiesFileLocation="${build.prop.dir}/build.properties"/>
+				<property name="createExecutables" value="${create_Executables}"/>
+				<property name="deliverableName" value="${deliverable_Name}"/>	
+				<property name="buildProject" value="${build_Project}"/>
+				<property name="edvrVersion" value="${edvr_version}"/>
+				<property name="berthingVersion" value="${berthing_version}"/>
+				<property name="mmrVersion" value="${mmr_version}"/>
+				<property name="s2deVersion" value="${s2de_version}"/>
+				<property name="dtuVersion" value="${dtu_version}"/>
+				<property name="versionNumber" value="${version_Number}"/>	
+			</else>
+		
+		</if>
+		
+	</target>
+	
+
+	<target name="downloadBuildFiles">
+		
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${svn.buildFiles.url}" revision="HEAD" destPath="${buildFiles.folder}" />
+		</svn>
+		
+	</target>
+	
+	
+	<target name="downloadLib" depends="downloadBuildFiles">
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${svn.lib.url}" revision="HEAD" destPath="${lib.dir}" />
+		</svn>
+	
+	</target>
+	
+	
+	<!-- download targets-->
+	<target name="downloadNtdps">
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${ntdps.svn.url}" revision="HEAD" destPath="${ntdps.project}" />
+		</svn>
+		
+		<copy todir="${ntdps.project}" overwrite="true">
+			<fileset file="${ntdps.build.file}"/>
+			<globmapper from="*.xml" to="build.xml"/>	
+		</copy>	
+	</target>
+	
+	<target name="downloadSnadis">
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${snadis.svn.url}" revision="HEAD" destPath="${snadis.project}" />
+		</svn>
+				
+		<copy todir="${snadis.project}" overwrite="true">
+			<fileset file="${snadis.build.file}"/>
+			<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+	</target>
+	
+	<target name="downloadEdvr">
+		
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${edvr.svn.url}" revision="HEAD" destPath="${edvr.project}" />
+		</svn>
+		
+		<copy todir="${edvr.project}" overwrite="true">
+			<fileset file="${edvr.build.file}"/>
+			<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<svn username="${svn.username}" password="${svn.pass}">
+					<checkout url="${keyport.nim.installer.svn.url}" revision="HEAD" destPath="${keyport.nim.installer.project}" />
+				</svn>
+			</then>
+		</if>
+	</target>
+	
+	<target name="downloadBerthingAdmin">
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${berthingAdmin.svn.url}" revision="HEAD" destPath="${berthingAdmin.project}" />
+		</svn>
+		
+		<copy todir="${berthingAdmin.project}" overwrite="true">
+			<fileset file="${berthingAdmin.build.file}"/>
+			<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+		
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${berthing.svn.url}" revision="HEAD" destPath="${berthing.project}" />
+		</svn>
+		
+		<copy todir="${berthing.project}" overwrite="true">
+				<fileset file="${berthing.build.file}"/>
+				<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<svn username="${svn.username}" password="${svn.pass}">
+					<checkout url="${keyport.nim.installer.svn.url}" revision="HEAD" destPath="${keyport.nim.installer.project}" />
+				</svn>
+			</then>
+		
+		</if>
+	</target>
+	
+	<target name="downloadMMR">
+		
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${mmr.svn.url}" revision="HEAD" destPath="${mmr.project}" />
+		</svn>
+		
+	
+		<copy todir="${mmr.project}" overwrite="true">
+					<fileset file="${mmr.build.file}"/>
+					<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<svn username="${svn.username}" password="${svn.pass}">
+					<checkout url="${keyport.nim.installer.svn.url}" revision="HEAD" destPath="${keyport.nim.installer.project}" />
+				</svn>
+				
+			</then>
+		</if>
+	</target>
+	
+	
+	<target name="downloadTSU">
+		
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${tsu.svn.url}" revision="HEAD" destPath="${tsu.project}" />
+		</svn>
+		
+	
+		<copy todir="${tsu.project}" overwrite="true">
+					<fileset file="${tsu.build.file}"/>
+					<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+	</target>
+	
+	<target name="downloadDTU">
+		
+		<svn username="${svn.username}" password="${svn.pass}">
+				<checkout url="${dtu.svn.url}" revision="HEAD" destPath="${dtu.project}" />
+			</svn>
+		
+	
+		<copy todir="${dtu.project}" overwrite="true">
+					<fileset file="${dtu.build.file}"/>
+					<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+	</target>
+	
+	
+	<target name="downloadS2DE">
+	
+		<svn username="${svn.username}" password="${svn.pass}">
+			<checkout url="${s2de.svn.url}" revision="HEAD" destPath="${s2de.project}" />
+		</svn>
+		
+		<copy todir="${s2de.project}" overwrite="true">
+			<fileset file="${s2de.build.file}"/>
+			<globmapper from="*.xml" to="build.xml"/>	
+		</copy>
+		
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<svn username="${svn.username}" password="${svn.pass}">
+					<checkout url="${dtu.svn.url}" revision="HEAD" destPath="${dtu.project}" />
+				</svn>
+								
+				<copy todir="${dtu.project}" overwrite="true">
+					<fileset file="${dtu.build.file}"/>
+					<globmapper from="*.xml" to="build.xml"/>	
+				</copy>
+			
+			</then>
+		</if>	
+	</target>	
+	
+	<target name="clean">
+			<!--<delete file="${build.info}"/>-->
+			<!-- delete the projects -->
+			<delete dir="${edvr.project}"/>
+			<delete dir="${ntdps.project}"/>
+			<delete dir="${snadis.project}"/>
+			<delete dir="${berthingAdmin.project}"/>
+			<delete dir="${berthing.project}"/>
+			<delete dir="${mmr.project}"/>
+			<delete dir="${tsu.project}"/>
+			<delete dir="${s2de.project}"/>
+			<delete dir="${dtu.project}"/>
+			<delete dir="${keyport.nim.installer.project}"/>
+			<delete dir="${checksum.creator.project}"/>
+			<!--delete directories-->
+			<delete dir="${buildFiles.folder}"/>
+			<delete dir="${lib.dir}"/>
+    </target>
+		
+	<target name="compile" depends="clean,login">
+		<if>
+			<equals arg1="${buildProject}" arg2="${edvr.project.name}"/>
+			<then>
+				<property name="subant.build.path" value="${edvr.build.path}"/>
+				<antcall target="buildEdvr"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${berthing.project.name}"/>
+			<then>
+				<property name="subant.build.path" value="${berthingAdmin.build.path}"/>
+				<antcall target="buildBerthing"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${mmr.project.name}"/>
+			<then>
+				<property name="subant.build.path" value="${mmr.build.path}"/>
+				<antcall target="buildMMR"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${tsu.project.name}"/>
+			<then>
+				<property name="subant.build.path" value="${tsu.build.path}"/>
+				<antcall target="buildTSU"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${all.projects}"/>
+			<then>
+				<property name="subant.build.path" value="${all.build.path}"/>
+				<antcall target="buildAll"/>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${buildProject}" arg2="${s2de.project.name}"/>
+			<then>
+				<property name="subant.build.path" value="${s2de.build.path}"/>
+				<antcall target="buildS2DE"/>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${buildProject}" arg2="${dtu.project.name}"/>
+			<then>
+				<property name="subant.build.path" value="${dtu.build.path}"/>
+				<antcall target="buildDTU"/>
+			</then>
+		</if>
+		
+	</target>
+	
+	
+	<!--build targets-->
+	<target name="buildAll" depends="downloadLib, downloadNtdps,downloadSnadis, downloadEdvr, downloadBerthingAdmin, downloadMMR">
+		
+		<subant buildpath="${all.build.path}">
+			<property name="project.path" value="${all.build.path}"/>
+			<property name="executables" value="${createExecutables}"/>
+		</subant>
+	</target>
+	
+	<target name="buildEdvr" depends="downloadLib, downloadNtdps,downloadSnadis, downloadEdvr">
+		
+		<subant buildpath="${edvr.build.path}">	
+			<property name="project.path" value="${edvr.build.path}"/>
+			<property name="executables" value="${createExecutables}"/>
+			<property name="svn.username" value="${svn.username}"/>	
+		</subant> 
+	</target>
+	
+	<target name="buildBerthing" depends="downloadLib, downloadNtdps,downloadSnadis, downloadBerthingAdmin">
+		<subant buildpath="${berthingAdmin.build.path}">
+			<property name="project.path" value="${berthingAdmin.build.path}"/>
+			<property name="executables" value="${createExecutables}"/>
+			<property name="svn.username" value="${svn.username}"/>	
+		</subant>
+	</target>
+	
+	<target name="buildMMR" depends="downloadLib, downloadNtdps, downloadSnadis, downloadMMR">
+		<subant buildpath="${mmr.build.path}">
+			<property name="project.path" value="${mmr.build.path}"/>
+			<property name="executables" value="${createExecutables}"/>
+			<property name="svn.username" value="${svn.username}"/>
+		</subant>
+	</target>
+	
+	<target name="buildTSU" depends="downloadLib, downloadTSU">
+		<subant buildpath="${tsu.build.path}">
+			<property name="project.path" value="${tsu.build.path}"/>
+			<property name="executables" value="${createExecutables}"/>
+			<property name="svn.username" value="${svn.username}"/>
+		</subant>
+	</target>
+	
+	
+	<target name="buildDTU" depends="downloadLib, downloadDTU">
+		<subant buildpath="${dtu.build.path}">
+			<property name="project.path" value="${dtu.build.path}"/>
+			<property name="executables" value="${createExecutables}"/>
+			<property name="svn.username" value="${svn.username}"/>
+		</subant>
+	</target>
+	
+	
+	<target name="buildS2DE" depends="downloadBuildFiles, downloadLib, downloadS2DE">
+	
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<subant buildpath="${s2de.release.build.path}">
+					<property name="project.path" value="${s2de.release.build.path}"/>
+					<property name="executables" value="${createExecutables}"/>
+					<property name="svn.username" value="${svn.username}"/>
+				</subant>
+			</then>
+			<else>
+				<subant buildpath="${s2de.build.path}">
+					<property name="project.path" value="${s2de.build.path}"/>
+					<property name="executables" value="${createExecutables}"/>
+					<property name="svn.username" value="${svn.username}"/>
+				</subant>
+			
+			</else>
+		</if>	
+	</target>
+	
+	<target name="createExecutable">
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<ant antfile="createExecutable.xml" inheritAll="true"/>
+			</then>	
+		</if>
+	</target>
+	
+	
+	<!-- update targets-->
+	<target name="updateEdvrVersionNumber">
+		<if>
+			<equals arg1="${edvrProperties.minor.version}" arg2="true"/>
+			<then>
+				<math result="edvrMinorNumber" operand1="${edvrProperties.build.minor.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${edvrProperties.patch.version}" arg2="true"/>
+			<then>
+				<math result="edvrPatchNumber" operand1="${edvrProperties.build.patch.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<math result="edvrBuildNumber" operand1="${edvrProperties.build.number}" operation="+" operand2="1" datatype="int"/>
+		
+		<propertyfile file="${edvr.version.file}">
+			<entry key="build.minor.version" type="int" value="${edvrMinorNumber}" pattern="0"/>
+			<entry key="build.patch.version" type="int" value="${edvrPatchNumber}" pattern="0"/>
+			<entry key="build.number" type="int" value="${edvrBuildNumber}" pattern="0"/>
+		</propertyfile>
+		
+		<echo file="${build.info}/edvr_v${edvrProperties.build.major.version}-${edvrMinorNumber}-${edvrPatchNumber}-${edvrBuildNumber}.txt" append="yes" message=" ${line.separator}${line.separator}Build finished successfully"/>
+		<echo file="${build.info}/edvr_v${edvrProperties.build.major.version}-${edvrMinorNumber}-${edvrPatchNumber}-${edvrBuildNumber}.txt" append="yes" message=" ${line.separator}Build number: ${edvrProperties.build.major.version}-${edvrMinorNumber}-${edvrPatchNumber}-${edvrBuildNumber}"/>
+		
+	</target>
+	<target name="updateBerthingVersion">
+		<if>
+			<equals arg1="${berthingProperties.minor.version}" arg2="true"/>
+			<then>
+				<math result="berthingMinorNumber" operand1="${berthingProperties.build.minor.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${berthingProperties.patch.version}" arg2="true"/>
+			<then>
+				<math result="berthingPatchNumber" operand1="${berthingProperties.build.patch.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<math result="berthingBuildNumber" operand1="${berthingProperties.build.number}" operation="+" operand2="1" datatype="int"/>
+		<propertyfile file="${berthing.version.file}">
+			<entry key="build.minor.version" type="int" value="${berthingMinorNumber}" pattern="0"/>
+			<entry key="build.patch.version" type="int" value="${berthingPatchNumber}" pattern="0"/>
+			<entry key="build.number" type="int" value="${berthingBuildNumber}" pattern="0"/>
+		</propertyfile>
+		
+		<echo file="${build.info}/berthing_v${berthingProperties.build.major.version}-${berthingMinorNumber}-${berthingPatchNumber}-${berthingBuildNumber}.txt" append="yes" message=" ${line.separator}${line.separator}Build finished successfully"/>
+		<echo file="${build.info}/berthing_v${berthingProperties.build.major.version}-${berthingMinorNumber}-${berthingPatchNumber}-${berthingBuildNumber}.txt" append="yes" message=" ${line.separator}Build number: ${berthingProperties.build.major.version}-${berthingMinorNumber}-${berthingPatchNumber}-${berthingBuildNumber}"/>
+	</target>
+	
+	<target name="updateMmrVersion">
+		<if>
+			<equals arg1="${mmrProperties.minor.version}" arg2="true"/>
+			<then>
+				<math result="mmrMinorNumber" operand1="${mmrProperties.build.minor.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${mmrProperties.patch.version}" arg2="true"/>
+			<then>
+				<math result="mmrPatchNumber" operand1="${mmrProperties.build.patch.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<math result="mmrBuildNumber" operand1="${mmrProperties.build.number}" operation="+" operand2="1" datatype="int"/>
+		
+		<propertyfile file="${mmr.version.file}">
+			<entry key="build.minor.version" type="int" value="${mmrMinorNumber}" pattern="0"/>
+			<entry key="build.patch.version" type="int" value="${mmrPatchNumber}" pattern="0"/>
+			<entry key="build.number" type="int" value="${mmrBuildNumber}" pattern="0"/>
+		</propertyfile>
+		
+		<echo file="${build.info}/mmr_v${mmrProperties.build.major.version}-${mmrMinorNumber}-${mmrPatchNumber}-${mmrBuildNumber}.txt" append="yes" message=" ${line.separator}${line.separator}Build finished successfully"/>
+		<echo file="${build.info}/mmr_v${mmrProperties.build.major.version}-${mmrMinorNumber}-${mmrPatchNumber}-${mmrBuildNumber}.txt" append="yes" message=" ${line.separator}Build number: ${mmrProperties.build.major.version}-${mmrMinorNumber}-${mmrPatchNumber}-${mmrBuildNumber}"/>
+	</target>
+	
+	<target name="updateTSUVersion">
+		<if>
+			<equals arg1="${tsuProperties.minor.version}" arg2="true"/>
+			<then>
+				<math result="tsuMinorNumber" operand1="${tsuProperties.build.minor.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${tsuProperties.patch.version}" arg2="true"/>
+			<then>
+				<math result="tsuPatchNumber" operand1="${tsuProperties.build.patch.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<math result="tsuBuildNumber" operand1="${tsuProperties.build.number}" operation="+" operand2="1" datatype="int"/>
+		
+		<propertyfile file="${tsu.version.file}">
+			<entry key="build.minor.version" type="int" value="${tsuMinorNumber}" pattern="0"/>
+			<entry key="build.patch.version" type="int" value="${tsuPatchNumber}" pattern="0"/>
+			<entry key="build.number" type="int" value="${tsuBuildNumber}" pattern="0"/>
+		</propertyfile>
+		
+		<echo file="${build.info}/tsu_v${tsuProperties.build.major.version}-${tsuMinorNumber}-${tsuPatchNumber}-${tsuBuildNumber}.txt" append="yes" message=" ${line.separator}${line.separator}Build finished successfully"/>
+		<echo file="${build.info}/tsu_v${tsuProperties.build.major.version}-${tsuMinorNumber}-${tsuPatchNumber}-${tsuBuildNumber}.txt" append="yes" message=" ${line.separator}Build number: ${tsuProperties.build.major.version}-${tsuMinorNumber}-${tsuPatchNumber}-${tsuBuildNumber}"/>
+	</target>
+	
+	<target name="updateS2DEVersion">
+		<if>
+			<equals arg1="${s2deProperties.minor.version}" arg2="true"/>
+			<then>
+				<math result="s2deMinorNumber" operand1="${s2deProperties.build.minor.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${s2deProperties.patch.version}" arg2="true"/>
+			<then>
+				<math result="s2dePatchNumber" operand1="${s2deProperties.build.patch.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<math result="s2deBuildNumber" operand1="${s2deProperties.build.number}" operation="+" operand2="1" datatype="int"/>
+		
+		
+		<propertyfile file="${s2de.version.file}">
+			<entry key="build.minor.version" type="int" value="${s2deMinorNumber}" pattern="0"/>
+			<entry key="build.patch.version" type="int" value="${s2dePatchNumber}" pattern="0"/>
+			<entry key="build.number" type="int" value="${s2deBuildNumber}" pattern="0"/>
+		</propertyfile>
+		
+		
+		<echo file="${build.info}/s2de_v${s2deProperties.build.major.version}-${s2deMinorNumber}-${s2dePatchNumber}-${s2deBuildNumber}.txt" append="yes" message=" ${line.separator}${line.separator}Build finished successfully"/>
+		<echo file="${build.info}/s2de_v${s2deProperties.build.major.version}-${s2deMinorNumber}-${s2dePatchNumber}-${s2deBuildNumber}.txt" append="yes" message=" ${line.separator}Build number: ${s2deProperties.build.major.version}-${s2deMinorNumber}-${s2dePatchNumber}-${s2deBuildNumber}"/>
+	
+		<!--copy the build info file to the build folder -->
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<copy todir="${deliverables.dir}/${deliverableName}/S2DE_Build" overwrite="true">
+					<fileset file="${build.info}/s2de_v${s2deProperties.build.major.version}-${s2deMinorNumber}-${s2dePatchNumber}-${s2deBuildNumber}.txt"/>	
+				</copy>
+			</then>
+			<else>
+				<copy todir="${s2de.build}" overwrite="true">
+					<fileset file="${build.info}/s2de_v${s2deProperties.build.major.version}-${s2deMinorNumber}-${s2dePatchNumber}-${s2deBuildNumber}.txt"/>	
+				</copy>			
+			</else>
+		</if>
+		
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+			
+				<antcall target="updateDTUVersion"/>
+			
+			</then>
+		</if>
+		
+	</target>
+	
+	<target name="updateDTUVersion">
+		<if>
+			<equals arg1="${dtuProperties.minor.version}" arg2="true"/>
+			<then>
+				<math result="dtuMinorNumber" operand1="${dtuProperties.build.minor.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${dtuProperties.patch.version}" arg2="true"/>
+			<then>
+				<math result="dtuPatchNumber" operand1="${dtuProperties.build.patch.version}" operation="+" operand2="1" datatype="int"/>
+			</then>
+		</if>
+		<math result="dtuBuildNumber" operand1="${dtuProperties.build.number}" operation="+" operand2="1" datatype="int"/>
+		
+		
+		<propertyfile file="${dtu.version.file}">
+			<entry key="build.minor.version" type="int" value="${dtuMinorNumber}" pattern="0"/>
+			<entry key="build.patch.version" type="int" value="${dtuPatchNumber}" pattern="0"/>
+			<entry key="build.number" type="int" value="${dtuBuildNumber}" pattern="0"/>
+		</propertyfile>
+		
+		
+		<echo file="${build.info}/dtu_v${dtuProperties.build.major.version}-${dtuMinorNumber}-${dtuPatchNumber}-${dtuBuildNumber}.txt" append="yes" message=" ${line.separator}${line.separator}Build finished successfully"/>
+		<echo file="${build.info}/dtu_v${dtuProperties.build.major.version}-${dtuMinorNumber}-${dtuPatchNumber}-${dtuBuildNumber}.txt" append="yes" message=" ${line.separator}Build number: ${dtuProperties.build.major.version}-${dtuMinorNumber}-${dtuPatchNumber}-${dtuBuildNumber}"/>
+	
+		<!--copy the build info file to the build folder -->
+		<if>
+			<equals arg1="${createExecutables}" arg2="true"/>
+			<then>
+				<copy todir="${deliverables.dir}/${deliverableName}/${buildProject}" overwrite="true">
+					<fileset file="${build.info}/dtu_v${dtuProperties.build.major.version}-${dtuMinorNumber}-${dtuPatchNumber}-${dtuBuildNumber}.txt"/>	
+				</copy>
+			</then>
+			<else>
+				<copy todir="${dtu.project}/dist" overwrite="true">
+					<fileset file="${build.info}/dtu_v${dtuProperties.build.major.version}-${dtuMinorNumber}-${dtuPatchNumber}-${dtuBuildNumber}.txt"/>	
+				</copy>			
+			</else>
+		</if>
+		
+		
+	</target>
+	
+	
+		
+</project>

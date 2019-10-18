@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="snadis" default="main" basedir=".">
+
+	<!--property files -->
+	<property name="workspace.dir" location="${basedir}/.." /> 
+	<property name="build.prop.dir" location="${workspace.dir}" /> 
+	<property file="${build.prop.dir}/build.properties" /> 
+	<property name="buildInfoFile" value="${basedir}/snadisCommonBuildInfo.txt"/>
+	<!-- directories -->
+	<property name="snadisSrc" location="${src.dir}"/>
+	<property name="snadisOutput" location="${compiled.dir}"/>
+	<property name="snadis.jar" location="${snadis.jar}"/>
+	
+
+	<!--jar files needed for compilation-->
+	<property name="snadisLib" location="${snadis.lib}"/>
+	<property name="commonLib" location="${common.lib}"/>
+	<property name="ntdps.jar" value="${ntdps.jar}"/>
+	
+	<path id="classpath">
+		<fileset dir="${snadisLib}"></fileset>
+		<fileset dir="${commonLib}"></fileset>
+		<pathelement location="${ntdps.jar}" />
+	</path>
+	
+	<target name="main" depends="compressSnadis">
+		<echo>
+			Finishing with snadis
+		</echo>
+	</target>
+
+	<target name="clean">
+		<delete dir="${snadisOutput}"/>
+		<delete dir="${dest.dir}"/>
+	</target>
+	
+	<target name="init">
+		<tstamp prefix="timeS"/>
+	
+		<touch file="${buildInfoFile}"/>
+		
+		
+		<echo file="${buildInfoFile}" message="Ant version used to do this build: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${ant.version} ${line.separator} ${line.separator}"/>
+	
+		<pathconvert pathsep="${line.separator} - " property="jarFiles" refid="classpath">
+			<mapper type="flatten"/>
+		</pathconvert>
+		
+		<echo file="${buildInfoFile}" append="yes" message="Snadis Version: ${snadis.svn.url}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -JDK version: ${jdk.version}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -Build by: ${svn.username}${line.separator}"/>
+		
+		
+		<echo file="${buildInfoFile}" append="yes" message="Compile Dependencies for ${ant.project.name}:${line.separator} -"/>
+		<echo file="${buildInfoFile}" message="   ${jarFiles}" append="yes"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message=" -Build by: ${svn.username}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -Build on: ${timeS.TODAY} ${timeS.TSTAMP}${line.separator}"/> 
+		
+		<echo file="${buildInfoFile}" append="yes" message="${line.separator} ${line.separator}********Snadis Common build file**************${line.separator}"/>
+
+		
+		<mkdir dir="${dest.dir}"/>
+		<mkdir dir="${snadisOutput}"/>
+	</target>
+	
+	<target name="checkSrc">
+		<condition property="checkedSrc">
+				<available file="${snadisSrc}" type="dir"/>
+		</condition>
+		<antcall target="failIfNoSrc"/>
+		<fileset dir="${snadisSrc}" id="javaFiles">
+			<filename name="**/*.java"/>
+		</fileset>
+		<pathconvert refid="javaFiles" property="fileSetNotEmpty" setonempty="false"/>
+		
+		<antcall target="failIfNoJavaFiles"/>
+		
+	</target>
+	
+	<target name="failIfNoSrc" unless="checkedSrc">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="SnadisCommon source folder does not exist in the current directory, stoping the build"/>
+		<fail message="SnadisCommon source folder does not exist in the current directory"/>
+	</target>
+	
+	<target name="failIfNoJavaFiles" unless="fileSetNotEmpty">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="SnadisCommon source folder is empty, there are no .java files to compile, stopping the build"/>
+		<fail message="SnadisCommon source folder is empty, there are no .java files to compile"/>
+	</target>
+
+	<target name="compileSnadisFiles" depends="init,checkSrc">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+			<javac srcdir="${snadisSrc}" destdir="${snadisOutput}" fork="yes" executable="${jdk.location}" target="${javac.target}" source="${javac.target}">
+				<classpath refid="classpath" />
+			</javac>
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	<target name="compressSnadis" depends="clean,init,compileSnadisFiles">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+			<jar destfile="${dest.dir}/SnadisCommon.jar" basedir="${snadisOutput}" includes="**/*.class"/>
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+
+</project>

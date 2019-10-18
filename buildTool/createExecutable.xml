@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="main" basedir=".">
+	
+	<property name="workspace.dir" location="${basedir}"/>
+	<property name="build.prop.dir" location="${workspace.dir}"/>
+	<property file="${build.prop.dir}/build.properties"/>
+
+	<target name="main" depends="createExecutable">
+		<echo>
+			Finished
+		</echo>
+	
+	</target>
+	
+	
+	
+	<target name="createExecutable">
+		<mkdir dir="${deliverables.dir}/${deliverableName}"/>
+		<var name="project" value="${buildProject}"/>
+		<var name="version_number" value="${versionNumber}"/>
+		<if>
+			<equals arg1="${buildProject}" arg2="${edvr.project.name}"/>
+			<then>
+				<antcall target="createEdvrExec"/>
+				<antcall target="copyHelperFiles"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${berthing.project.name}"/>
+			<then>
+				<antcall target="createBerthingExec"/>
+				<antcall target="copyHelperFiles"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${mmr.project.name}"/>
+			<then>
+				<antcall target="createMMRExec"/>
+				<antcall target="copyHelperFiles"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${tsu.project.name}"/>
+			<then>
+				<antcall target="createTSUExec"/>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${all.projects}"/>
+			<then>
+				<antcall target="createExecutableAllProjects"/>
+				<antcall target="copyHelperFiles"/>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${buildProject}" arg2="${s2de.project.name}"/>
+			<then>
+				<var name="version_number" value="${s2deVersion}"/>
+				<antcall target="createS2DEFileStructure"/>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${buildProject}" arg2="${dtu.project.name}"/>
+			<then>
+				<var name="version_number" value="${dtuVersion}"/>
+				<antcall target="createDTUFileStructure"/>
+			</then>
+		</if>
+	
+	</target>
+
+	<target name="hello">
+		<echo>"${basedir}"</echo>
+	</target>
+	
+	<target name="copyHelperFiles" >
+	
+		<mkdir dir="${deliverables.dir}/${deliverableName}/IntAppPwChg"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/IntAppPwChg" overwrite="true">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/IntAppPwChg"/>
+		</copy>
+		<mkdir dir="${deliverables.dir}/${deliverableName}/system_install_files"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/system_install_files" overwrite="true">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/system_install_files"/>
+		</copy>
+	
+	</target>
+	
+	<target name="createEdvrFileStructure">
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/${project}">
+				<include name="install_readme.txt"/>
+				<include name="*.ppt"/>
+				<include name="EDVR_09-27-2012.docx"/>
+			</fileset>
+		</copy>	
+		<available file="${deliverables.dir}/${deliverableName}/${project}/Test_Files" type="dir" property="testDataExists"/>
+		
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}/Test_Files"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}/Test_Files">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/${project}/Test_Files"/>
+		</copy>
+			
+	</target>
+	
+	<target name="createEdvrExec" depends="createEdvrFileStructure">
+		<delete file="${installation.dir}/edvr.war"/>
+		<copy file="${edvr.war}" todir="${installation.dir}"/>
+		
+		
+		<antcall target="versionReplace"/>
+
+		<record name="${build.info}/installerLog_for_${project}_${version_number}.log" action="start" append="yes"/>
+		<exec executable="${installer.compiler.exe.location}/devenv.com">
+			<arg value="${keyport.nim.installer.project}/Keyport_NIM Installer.sln"/>
+			<arg value="/build"/>
+			<arg value="${installer.build.mode.switch}"/>
+		</exec>
+		<record name="${build.info}/installerLog_for_${project}_${version_number}.log" action="stop" append="yes"/>
+		
+		<!--call msbuild to build to solution installer.build.mode.switch-->
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset file="${keyport.nim.installer.exe}"/>
+		</copy>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset dir="${keyport.nim.installer.project}/Config Files">
+				<include name="Keyport_NIM Installer.bat"/>
+				<include name="Keyport_NIM_Config.conf" />
+				<include name="Read Me.txt"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="createBerthingFileStructure">
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/${project}"/>
+		</copy>
+	
+	</target>
+	
+	<target name="createBerthingExec" depends="createBerthingFileStructure">
+		<delete file="${installation.dir}/berthingAdmin.war"/>
+		<delete file="${installation.dir}/berthing.war"/>
+		
+		
+		<copy todir="${installation.dir}">
+			<fileset file="${berthing.war}" />
+			<fileset file="${berthingAdmin.war}"/>
+		</copy>		
+		
+		<antcall target="versionReplace"/>
+		
+		<record name="${build.info}/installerLog_for_${project}_${version_number}.log" action="start" append="yes"/>
+		<exec executable="${installer.compiler.exe.location}/devenv.com">
+			<arg value="${keyport.nim.installer.project}/Keyport_NIM Installer.sln"/>
+			<arg value="/build"/>
+			<arg value="${installer.build.mode.switch}"/>
+		</exec>
+		<record name="${build.info}/installerLog_for_${project}_${version_number}.log" action="stop" append="yes"/>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset file="${keyport.nim.installer.exe}"/>
+		</copy>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset dir="${keyport.nim.installer.project}/Config Files">
+				<include name="Keyport_NIM Installer.bat"/>
+				<include name="Keyport_NIM_Config.conf" />
+				<include name="Read Me.txt"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="createMmrFileStructure">
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}"/>
+
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/${project}">
+				<include name="postDBUtil.bat" />
+				<include name="delet_mmr_tables.sql"/>
+				<include name="AdminGuide.pdf"/>
+			</fileset>
+		</copy>
+		
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}/mmr_test_data"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}/mmr_test_data">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/${project}/mmr_test_data"/>
+		</copy>
+		
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}/MMR Job Sheets"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}/MMR Job Sheets">
+			<fileset dir="${deliverables.dir}/${installation.helper.directory}/${project}/MMR Job Sheets"/>
+		</copy>
+		
+	</target>
+
+	<target name="createMMRExec" depends="createMmrFileStructure">
+		<delete file="${installation.dir}/mmr.war"/>
+		
+		<copy file="${mmr.war}" todir="${installation.dir}"/>
+		
+		<antcall target="versionReplace"/>
+		
+		
+		<record name="${build.info}/installerLog_for_${project}_${version_number}.log" action="start" append="yes"/>
+		<exec executable="${installer.compiler.exe.location}/devenv.com">
+			<arg value="${keyport.nim.installer.project}/Keyport_NIM Installer.sln"/>
+			<arg value="/build"/>
+			<arg value="${installer.build.mode.switch}"/>
+		</exec>
+		<record name="${build.info}/installerLog_for_${project}_${version_number}.log" action="stop" append="yes"/>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset file="${keyport.nim.installer.exe}"/>
+		</copy>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset dir="${keyport.nim.installer.project}/Config Files">
+				<include name="Keyport_NIM Installer.bat"/>
+				<include name="Keyport_NIM_Config.conf" />
+				<include name="Read Me.txt"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="createDTUFileStructure">
+		
+		
+		<copy file="${dtu.jar}" todir="${deliverables.dir}/${deliverableName}/${buildProject}"/>
+		
+	</target>
+	
+	<target name="createS2DEFileStructure" >
+		<mkdir dir="${deliverables.dir}/${deliverableName}/S2DE_Build"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/S2DE_Build">
+			<fileset dir="${s2de.build}">
+				<exclude name="**/GuestExes/**"/>
+			</fileset>
+		</copy>
+		
+		<mkdir dir="${deliverables.dir}/${deliverableName}/DTU"/>
+				
+		<!--copy scripts directory, exclude the version number file since its going to be copied and renamed in the next task -->
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}" overwrite="true">
+			<fileset file="${dtu.jar}"/>
+		</copy>
+		
+		<antcall target="versionReplace"/>
+		
+	</target>
+	
+	
+	<target name="createTSUExec">
+		<mkdir dir="${deliverables.dir}/${deliverableName}/${project}"/>
+		<copy todir="${deliverables.dir}/${deliverableName}/${project}">
+			<fileset file="${tsu.war}"/>		
+		</copy>
+	
+	
+	</target>
+	
+	
+	<target name="createExecutableAllProjects">
+		<var name="allProjects" value="${project}"/>
+		
+		<var name="project" value="${edvr.project.name}"/>
+		<antcall target="createEdvrFileStructure"/>
+		
+		<var name="project" value="${berthing.project.name}"/>
+		<antcall target="createBerthingFileStructure"/>
+		
+		<var name="project" value="${mmr.project.name}"/>
+		<antcall target="createMmrFileStructure"/>
+		
+		<var name="project" value="${allProjects}"/>
+		
+		<!-- edvr war file -->
+		<delete file="${installation.dir}/edvr.war"/>
+		<copy file="${edvr.war}" todir="${installation.dir}"/>
+	
+		<!--berthing war files -->
+		<delete file="${installation.dir}/berthingAdmin.war"/>
+		<delete file="${installation.dir}/berthing.war"/>
+		<copy todir="${installation.dir}">
+			<fileset file="${berthing.war}" />
+			<fileset file="${berthingAdmin.war}"/>
+		</copy>	
+
+		<!-- mmr war file -->
+		<delete file="${installation.dir}/mmr.war"/>
+		<copy file="${mmr.war}" todir="${installation.dir}"/>
+		
+		<antcall target="versionReplace"/>
+		
+		
+		<record name="${build.info}/installerLog_for_${project}.log" action="start" append="yes"/>
+		<exec executable="${installer.compiler.exe.location}/devenv.com">
+			<arg value="${keyport.nim.installer.project}/Keyport_NIM Installer.sln"/>
+			<arg value="/build"/>
+			<arg value="${installer.build.mode.switch}"/>
+		</exec>
+		<record name="${build.info}/installerLog_for_${project}.log" action="stop" append="yes"/>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}" overwrite="true">
+			<fileset file="${keyport.nim.installer.exe}"/>
+		</copy>
+		
+		<copy todir="${deliverables.dir}/${deliverableName}" overwrite="true">
+			<fileset dir="${keyport.nim.installer.project}/Config Files">
+				<include name="Keyport_NIM Installer.bat"/>
+				<include name="Keyport_NIM_Config.conf" />
+				<include name="Read Me.txt"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="versionReplace">
+		<!--<if>
+			<equals arg1="${project}" arg2="${s2de.project.name}"/>
+			<then>
+				<replaceregexp match="Version [\d\.]*" replace="Version ${scripts_version}" byline="true" flags="g">
+					<fileset dir="${deliverables.dir}/${deliverableName}/S2DE_DataTransfer_VBscripts/wizards/scripts" includes="*.txt"/>				
+				</replaceregexp>
+				
+				<tstamp prefix="releaseDate" />
+				
+				<replaceregexp match="Release Date:(.*)?" replace="Release Date: ${releaseDate.TODAY}" byline="true" flags="g">
+					<fileset dir="${deliverables.dir}/${deliverableName}/S2DE_DataTransfer_VBscripts/wizards/scripts" includes="*.txt"/>				
+				</replaceregexp>
+			
+			</then>
+		</if>-->
+		
+		<if>
+			<equals arg1="${project}" arg2="${edvr.project.name}"/>
+			<then>
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for EDVR -->
+				<replaceregexp match="EDVR_VERSION = &quot;[\d\.]*" replace="EDVR_VERSION =  &quot;${version_number}" byline="true" flags="g">
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+				<!--modify config fille to tell the installer to only install edvr-->
+				<replaceregexp  byline="true">
+					<regexp pattern="(_AP\d)=TRUE" /> <!--set everything that has AP in the name to false -->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+			
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${project}" arg2="${berthing.project.name}"/>
+			<then>	
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for Berthing -->
+				<replaceregexp  byline="true">
+					<regexp pattern="(BERTHING_VERSION_AP\d) = &quot;[\d\.]*" />
+					<substitution expression="\1 = &quot;${version_number}"/>
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+				<!--modify config fille to tell the installer to only install berthing-->
+				<replaceregexp  byline="true">
+					<regexp pattern="(INSTALL_EDVR)=TRUE" /><!--set install EDVR to false-->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+				<replaceregexp  byline="true">
+					<regexp pattern="(INSTALL_MMR_AP\d)=TRUE" /> <!--set install mmr to false -->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+			</then>
+		</if>
+		
+		<if>
+			<equals arg1="${project}" arg2="${berthing.project.name}"/>
+			<then>	
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for Berthing -->
+				<replaceregexp  byline="true">
+					<regexp pattern="(BERTHING_VERSION_AP\d) = &quot;[\d\.]*" />
+					<substitution expression="\1 = &quot;${version_number}"/>
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+				<!--modify config fille to tell the installer to only install berthing-->
+				<replaceregexp  byline="true">
+					<regexp pattern="(INSTALL_EDVR)=TRUE" /><!--set install EDVR to false-->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+				<replaceregexp  byline="true">
+					<regexp pattern="(INSTALL_MMR_AP\d)=TRUE" /> <!--set install mmr to false -->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+			</then>
+		</if>
+		
+		
+		<if>
+			<equals arg1="${project}" arg2="${mmr.project.name}"/>
+			<then>	
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for MMR -->
+				<replaceregexp  byline="true">
+					<regexp pattern="(MMR_VERSION_AP\d) = &quot;[\d\.]*" />
+					<substitution expression="\1 = &quot;${version_number}"/>
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+				<!--modify config fille to tell the installer to only install MMR-->
+				<replaceregexp  byline="true">
+					<regexp pattern="(INSTALL_EDVR)=TRUE" /> <!--set install EDVR to false-->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+				<replaceregexp  byline="true">
+					<regexp pattern="(INSTALL_BERTHING_AP\d)=TRUE" /><!--set install berthing to false -->
+					<substitution expression="\1=FALSE"/>
+					<fileset file="${keyport.nim.installer.project}/Config Files/Keyport_NIM_Config.conf"/>				
+				</replaceregexp>
+			</then>
+		</if>
+		<if>
+			<equals arg1="${buildProject}" arg2="${all.projects}"/>
+			<then>
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for EDVR -->
+				<replaceregexp match="EDVR_VERSION = &quot;[\d\.]*" replace="EDVR_VERSION =  &quot;${edvrVersion}" byline="true" flags="g">
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for Berthing -->
+				<replaceregexp  byline="true">
+					<regexp pattern="(BERTHING_VERSION_AP\d) = &quot;[\d\.]*" />
+					<substitution expression="\1 = &quot;${berthing_version}"/>
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+				
+				<!-- REPLACE VERSION NUMBER THAT WILL BE PUT IN Registry for MMR -->
+				<replaceregexp  byline="true">
+					<regexp pattern="(MMR_VERSION_AP\d) = &quot;[\d\.]*" />
+					<substitution expression="\1 = &quot;${mmr_version}"/>
+					<fileset file="${keyport.nim.installer.project}/CustomAction2/Installer1.cs"/>				
+				</replaceregexp>
+				
+			</then>
+		</if>
+
+	</target>
+</project>

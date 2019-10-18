@@ -1,0 +1,12 @@
+#Wed, 02 Dec 2015 13:21:33 -0800
+#Wed Nov 14 13:04:41 PST 2012
+#set these variables to change tsu's version number
+
+#beta version
+beta.version=false
+
+build.major.version=6
+build.minor.version=6
+build.patch.version=6
+build.number=1
+

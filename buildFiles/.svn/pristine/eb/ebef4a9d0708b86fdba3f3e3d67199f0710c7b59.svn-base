@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="DTU" default="main" basedir=".">
+
+	
+	<property name="workspace.dir" location="${basedir}/.." /> 
+	<property name="build.prop.dir" location="${workspace.dir}" /> 
+	<property file="${build.prop.dir}/build.properties" /> 
+	<property file="${dtu.version.file}"/>
+	<property name="minor" value="${build.minor.version}"/>
+	<property name="patch" value="${build.patch.version}"/>	
+	
+	<!-- directory structure -->
+	<property name="dtuSrc" location="${src.dir}"/>
+	<property name="dtuOutput" location="${compiled.dir}"/>
+	<property name="dtuDest" location="${dest.dir}"/>
+	
+	
+	<!-- dtu directories -->
+	<property name="fxJar" location="${lib.dir}/Java/jdk1.7.0_79/jre/lib/jfxrt.jar"/>
+	<!--<property name="webXML" location="${basedir}/web/WEB-INF"/>
+	<property name="webDir" location="${basedir}/web"/>
+	<property name="libDir" location="${webXML}/lib"/>-->
+	
+
+	<!-- jar files needed for compilation-->
+	<property name="dtuLib" location="${dtu.lib}"/>
+	
+	
+	<path id="classpath">
+		<fileset dir="${dtuLib}"></fileset>
+		<fileset dir="${basedir}/included_libs"></fileset>
+		<fileset file="${fxJar}"></fileset>
+	</path>
+	
+	<target name="main" depends="createJar">
+		<echo>
+			Finishing with Data Transfer Utility 
+		</echo>
+	</target>
+	
+	<target name="clean">
+		
+		<delete dir="${dtuDest}"/>
+		<delete dir="${dtuOutput}"/>
+	</target>
+
+	<target name="init" depends="clean, buildNumber">
+		<tstamp prefix="timeS"/>
+
+		<touch file="${buildInfoFile}"/>
+		<echo file="${buildInfoFile}" message="Ant version used to do this build: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${ant.version} ${line.separator} ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="Data Transfer Utility Version: ${line.separator} -${dtu.svn.url}${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="Runtime Dependencies: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -JDK version: ${jdk.version}${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message=" -Build by: ${svn.username}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -Build on: ${timeS.TODAY} ${timeS.TSTAMP}${line.separator}"/> 
+
+		
+		<echo file="${buildInfoFile}" append="yes" message="Compile Dependencies for ${ant.project.name}:${line.separator} -"/>
+		
+		<pathconvert pathsep="${line.separator} - " property="jarFiles" refid="classpath">
+			<mapper type="flatten"/>
+		</pathconvert>
+		
+		<echo file="${buildInfoFile}" message="   ${jarFiles}" append="yes"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="${line.separator} ${line.separator}********Data Transfer Utility build file**************${line.separator}"/>
+		
+		<mkdir dir="${dtuDest}"/>
+		<mkdir dir="${dtuOutput}"/>
+	</target>
+	
+	<target name="checkSrc">
+		<condition property="checkedSrc">
+				<available file="${dtuSrc}" type="dir"/>
+		</condition>
+		<antcall target="failIfNoSrc"/>
+		<fileset dir="${dtuSrc}" id="javaFiles">
+			<filename name="**/*.java"/>
+		</fileset>
+		<pathconvert refid="javaFiles" property="fileSetNotEmpty" setonempty="false"/>
+		
+		<antcall target="failIfNoJavaFiles"/>
+		
+	</target>
+	
+	<target name="failIfNoSrc" unless="checkedSrc">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="Data Transfer Utility source folder does not exist in the current directory, stoping the build"/>
+		<fail message="Data Transfer Utility source folder does not exist in the current directory"/>
+	</target>
+	
+	<target name="failIfNoJavaFiles" unless="fileSetNotEmpty">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="Data Transfer Utility source folder is empty, there are no .java files to compile, stopping the build"/>
+		<fail message="Data Transfer Utility source folder is empty, there are no .java files to compile"/>
+	</target>
+
+	
+	<target name="compile" depends="init,checkSrc">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+			<javac srcdir="${dtuSrc}" destdir="${dtuOutput}" fork="yes" executable="${jdk.location}" target="${javac.target}" source="${javac.target}">
+				<classpath refid="classpath" /> 
+			</javac>	
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	
+	<target name="createJar" depends="compile">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+			<jar destfile="${dtu.jar}" basedir="${dtuOutput}" includes="**/*.class">
+			<manifest>
+				<attribute name="Main-Class" value="main.DTU_Main"/>
+			</manifest>
+			<fileset dir="${dtuSrc}">
+				<exclude name="**/*.java"/>
+			</fileset>
+			<zipgroupfileset file="${fxJar}"/>
+			<zipgroupfileset file="${basedir}/included_libs/*.jar"/>
+		</jar>
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	<target name="minor" if="${minor.version}">
+		<math result="minor" operand1="${minor}" operation="+" operand2="1" datatype="int"/>
+	</target>
+	
+	<target name="patch" if="${patch.version}">
+		<math result="patch" operand1="${patch}" operation="+" operand2="1" datatype="int"/>
+	</target>
+
+	<target name="buildNumber" depends="minor,patch">
+		<math result="bNumber" operand1="${build.number}" operation="+" operand2="1" datatype="int"/>
+		<property name="buildInfoFile" value="${build.info}/dtu_v${build.major.version}-${minor}-${patch}-${bNumber}.txt"/>
+	</target>
+	
+</project>

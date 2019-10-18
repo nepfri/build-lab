@@ -1,0 +1,10 @@
+#Tue, 02 Feb 2016 08:49:43 -0800
+#set these variables to change s2de's version number
+
+#beta version
+beta.version=false
+
+build.major.version=3
+build.minor.version=0
+build.patch.version=0
+build.number=3

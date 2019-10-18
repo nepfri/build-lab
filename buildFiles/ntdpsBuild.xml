@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ntdps" default="main" basedir=".">
+
+	<!--property files -->
+	<property name="workspace.dir" location="${basedir}/.." /> 
+	<property name="build.prop.dir" location="${workspace.dir}" /> 
+	<property file="${build.prop.dir}/build.properties" /> 
+	<property name="buildInfoFile" value="${basedir}/ntdpsAPIWebServiceBuildInfo.txt"/>
+	
+	
+	<!--directories-->
+	<property name="ntdpsSrc" location="${src.dir}"/>
+	<property name="ntdps0utput" location="${compiled.dir}"/>
+
+	<!--jar files needed for ntdps compilation-->
+	<property name="ntdpsLib" location="${ntdps.lib}"/>
+	<property name="commonLib" location="${common.lib}"/>
+	
+	<path id="classpath">
+		<fileset dir="${ntdpsLib}"></fileset>
+		<fileset dir="${commonLib}"></fileset>
+	</path>
+	<target name="main" depends="compressNTDPS">
+		<echo>
+			Finished with ntdps
+		</echo>
+		
+	</target>
+	<target name="clean">
+		<delete dir="${ntdps0utput}"/>
+		<delete dir="${dest.dir}"/>
+		
+	</target>
+	
+	<target name="init" depends="clean">
+		<tstamp prefix="timeS"/>
+	
+		<touch file="${buildInfoFile}"/>
+		
+		<echo file="${buildInfoFile}" message="Ant version used to do this build: ${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message="${ant.version} ${line.separator} ${line.separator}"/>
+	
+	
+		<pathconvert pathsep="${line.separator} - " property="jarFiles" refid="classpath">
+			<mapper type="flatten"/>
+		</pathconvert>
+		
+		<echo file="${buildInfoFile}" append="yes" message="Ntdps Version: ${ntdps.svn.url}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -JDK version: ${jdk.version}${line.separator}"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message=" -Build by: ${svn.username}${line.separator}"/>
+		<echo file="${buildInfoFile}" append="yes" message=" -Build on: ${timeS.TODAY} ${timeS.TSTAMP} ${line.separator}"/> 
+		
+		<echo file="${buildInfoFile}" append="yes" message="Compile Dependencies for ${ant.project.name}: ${line.separator} -"/>
+
+		<echo file="${buildInfoFile}" message="   ${jarFiles}" append="yes"/>
+		
+		<echo file="${buildInfoFile}" append="yes" message="${line.separator} ${line.separator}********NTDPS build file**************${line.separator}"/>
+
+		<mkdir dir="${dest.dir}"/>
+		<mkdir dir="${ntdps0utput}"/>
+	</target>
+	
+	<target name="checkSrc">
+		<condition property="checkedSrc">
+				<available file="${ntdpsSrc}" type="dir"/>
+		</condition>
+		<antcall target="failIfNoSrc"/>
+		<fileset dir="${ntdpsSrc}" id="javaFiles">
+			<filename name="**/*.java"/>
+		</fileset>
+		<pathconvert refid="javaFiles" property="fileSetNotEmpty" setonempty="false"/>
+		
+		<antcall target="failIfNoJavaFiles"/>
+		
+	</target>
+	
+	<target name="failIfNoSrc" unless="checkedSrc">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="NTDPS source folder does not exist in the current directory, stopping the build"/>
+		<fail message="NTDPS source folder does not exist in the current directory"/>
+	</target>
+	
+	<target name="failIfNoJavaFiles" unless="fileSetNotEmpty">
+		<delete file="${buildInfoFile}"/>
+		<propertyfile file="${build.prop.dir}/build.properties">
+			<entry key="build.info" value="${workspace.dir}/buildInfo"/>
+		</propertyfile>
+		<input message="NtdpsWebServiceAPI source folder is empty, there are no .java files to compile, stopping the build"/>
+		<fail message="NtdpsWebServiceAPI source folder is empty, there are no .java files to compile"/>
+	</target>
+
+	<target name="compileNTDPSfiles" depends="init, checkSrc">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+		
+			<javac srcdir="${ntdpsSrc}" destdir="${ntdps0utput}" fork="yes" executable="${jdk.location}" target="${javac.target}" source="${javac.target}">
+				<classpath refid="classpath" /> 
+			</javac>
+			
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+	
+	<target name="compressNTDPS" depends="compileNTDPSfiles">
+		<record name="${buildInfoFile}" action="start" append="yes"/>
+			<jar destfile="${dest.dir}/NtdpsWebServiceAPI.jar" basedir="${ntdps0utput}" includes="**/*.class"/>
+		<record name="${buildInfoFile}" action="stop"/>
+	</target>
+</project>
